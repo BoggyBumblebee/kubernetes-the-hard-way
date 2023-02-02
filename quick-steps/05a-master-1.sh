@@ -76,7 +76,7 @@ LOADBALANCER=$(dig +short loadbalancer)
   kubectl config use-context default --kubeconfig=admin.kubeconfig
 
 
-for instance in worker-1 worker-2; do
+for instance in worker-1 worker-2 worker-3; do
   scp kube-proxy.kubeconfig ${instance}:~/
 done
 

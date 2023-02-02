@@ -165,7 +165,7 @@ for instance in master-1 master-2; do
     ${instance}:~/
 done
 
-for instance in worker-1 worker-2 ; do
+for instance in worker-1 worker-2 worker-3; do
   scp ca.crt kube-proxy.crt kube-proxy.key ${instance}:~/
 done
 

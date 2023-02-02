@@ -31,7 +31,7 @@ PORT_NUMBER=$(kubectl get svc -l app=nginx -o jsonpath="{.items[0].spec.ports[0]
 
 curl http://worker-1:$PORT_NUMBER
 curl http://worker-2:$PORT_NUMBER
-
+curl http://worker-3:$PORT_NUMBER
 
 POD_NAME=$(kubectl get pods -l app=nginx -o jsonpath="{.items[0].metadata.name}")
 

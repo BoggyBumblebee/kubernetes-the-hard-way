@@ -13,6 +13,7 @@ MASTER_1=$(dig +short master-1)
 MASTER_2=$(dig +short master-2)
 WORKER_1=$(dig +short worker-1)
 WORKER_2=$(dig +short worker-2)
+WORKER_3=$(dig +short worker-3)
 LOADBALANCER=$(dig +short loadbalancer)
 LOCALHOST="127.0.0.1"
 
@@ -119,7 +120,7 @@ check_cert_and_key()
                     then
                         printf "${SUCCESS}${name} cert and key are correct\n${NC}"
                     else
-                        printf "${FAILED}Exiting...Found mismtach in the ${name} certificate and keys, More details: https://github.com/mmumshad/kubernetes-the-hard-way/blob/master/docs/04-certificate-authority.md#certificate-authority\n${NC}"
+                        printf "${FAILED}Exiting...Found [1] mismtach in the ${name} certificate and keys, More details: https://github.com/mmumshad/kubernetes-the-hard-way/blob/master/docs/04-certificate-authority.md#certificate-authority\n${NC}"
                         exit 1
                 fi
             else
@@ -139,6 +140,8 @@ check_cert_only()
     # Worker-2 auto cert is a .pem
     [ -f "${CERT_LOCATION}/$1.pem" ] && cert="${CERT_LOCATION}/$1.pem"
 
+    printf "CERTZ ${CERT_LOCATION}/$1.pem /n"
+
     if [ -z $cert ]
         then
             printf "${FAILED}cert not present in ${CERT_LOCATION}. Perhaps you missed a copy step\n${NC}"
@@ -153,7 +156,8 @@ check_cert_only()
                     then
                         printf "${SUCCESS}${name} cert is correct\n${NC}"
                     else
-                        printf "${FAILED}Exiting...Found mismtach in the ${name} certificate, More details: https://github.com/mmumshad/kubernetes-the-hard-way/blob/master/docs/04-certificate-authority.md#certificate-authority\n${NC}"
+			printf "${name} subject = ${subject} and issuer = ${issuer} "
+                        printf "${FAILED}Exiting...Found [2] mismtach in the ${name} certificate, More details: https://github.com/mmumshad/kubernetes-the-hard-way/blob/master/docs/04-certificate-authority.md#certificate-authority\n${NC}"
                         exit 1
                 fi
             else
@@ -181,7 +185,7 @@ check_cert_adminkubeconfig()
                     then
                         printf "${SUCCESS}admin kubeconfig cert and key are correct\n"
                     else
-                        printf "${FAILED}Exiting...Found mismtach in the admin kubeconfig certificate and keys, More details: https://github.com/mmumshad/kubernetes-the-hard-way/blob/master/docs/05-kubernetes-configuration-files.md#the-admin-kubernetes-configuration-file\n"
+                        printf "${FAILED}Exiting...Found [3] mismtach in the admin kubeconfig certificate and keys, More details: https://github.com/mmumshad/kubernetes-the-hard-way/blob/master/docs/05-kubernetes-configuration-files.md#the-admin-kubernetes-configuration-file\n"
                         exit 1
                 fi
             else
@@ -295,7 +299,7 @@ check_systemd_etcd()
                     then
                         printf "${SUCCESS}ETCD certificate, ca and key files are correct under systemd service\n${NC}"
                     else
-                        printf "${FAILED}Exiting...Found mismtach in the ETCD certificate, ca and keys. More details: https://github.com/mmumshad/kubernetes-the-hard-way/blob/master/docs/07-bootstrapping-etcd.md#configure-the-etcd-server\n${NC}"
+                        printf "${FAILED}Exiting...Found [4] mismtach in the ETCD certificate, ca and keys. More details: https://github.com/mmumshad/kubernetes-the-hard-way/blob/master/docs/07-bootstrapping-etcd.md#configure-the-etcd-server\n${NC}"
                         exit 1
                 fi
 
@@ -304,7 +308,7 @@ check_systemd_etcd()
                     then
                         printf "${SUCCESS}ETCD initial-advertise-peer-urls, listen-peer-urls, listen-client-urls, advertise-client-urls are correct\n${NC}"
                     else
-                        printf "${FAILED}Exiting...Found mismtach in the ETCD initial-advertise-peer-urls / listen-peer-urls / listen-client-urls / advertise-client-urls. More details: https://github.com/mmumshad/kubernetes-the-hard-way/blob/master/docs/07-bootstrapping-etcd.md#configure-the-etcd-server\n${NC}"
+                        printf "${FAILED}Exiting...Found [5] mismtach in the ETCD initial-advertise-peer-urls / listen-peer-urls / listen-client-urls / advertise-client-urls. More details: https://github.com/mmumshad/kubernetes-the-hard-way/blob/master/docs/07-bootstrapping-etcd.md#configure-the-etcd-server\n${NC}"
                         exit 1
                 fi
 
@@ -350,7 +354,7 @@ check_systemd_api()
                     then
                         printf "${SUCCESS}kube-apiserver advertise-address/ client-ca-file/ etcd-cafile/ etcd-certfile/ etcd-keyfile/ kubelet-certificate-authority/ kubelet-client-certificate/ kubelet-client-key/ service-account-key-file/ tls-cert-file/ tls-private-key-file are correct\n${NC}"
                     else
-                        printf "${FAILED}Exiting...Found mismtach in the kube-apiserver systemd file, check advertise-address/ client-ca-file/ etcd-cafile/ etcd-certfile/ etcd-keyfile/ kubelet-certificate-authority/ kubelet-client-certificate/ kubelet-client-key/ service-account-key-file/ tls-cert-file/ tls-private-key-file. More details: https://github.com/mmumshad/kubernetes-the-hard-way/blob/master/docs/08-bootstrapping-kubernetes-controllers.md#configure-the-kubernetes-api-server\n${NC}"
+                        printf "${FAILED}Exiting...Found [6] mismtach in the kube-apiserver systemd file, check advertise-address/ client-ca-file/ etcd-cafile/ etcd-certfile/ etcd-keyfile/ kubelet-certificate-authority/ kubelet-client-certificate/ kubelet-client-key/ service-account-key-file/ tls-cert-file/ tls-private-key-file. More details: https://github.com/mmumshad/kubernetes-the-hard-way/blob/master/docs/08-bootstrapping-kubernetes-controllers.md#configure-the-kubernetes-api-server\n${NC}"
                         exit 1
                 fi
             else
@@ -385,7 +389,7 @@ check_systemd_kcm()
                     then
                         printf "${SUCCESS}kube-controller-manager cluster-signing-cert-file, cluster-signing-key-file, kubeconfig, root-ca-file, service-account-private-key-file  are correct\n${NC}"
                     else
-                        printf "${FAILED}Exiting...Found mismtach in the kube-controller-manager cluster-signing-cert-file, cluster-signing-key-file, kubeconfig, root-ca-file, service-account-private-key-file. More details: https://github.com/mmumshad/kubernetes-the-hard-way/blob/master/docs/08-bootstrapping-kubernetes-controllers.md#configure-the-kubernetes-controller-manager\n${NC}"
+                        printf "${FAILED}Exiting...Found [7] mismtach in the kube-controller-manager cluster-signing-cert-file, cluster-signing-key-file, kubeconfig, root-ca-file, service-account-private-key-file. More details: https://github.com/mmumshad/kubernetes-the-hard-way/blob/master/docs/08-bootstrapping-kubernetes-controllers.md#configure-the-kubernetes-controller-manager\n${NC}"
                         exit 1
                 fi
             else
@@ -414,7 +418,7 @@ check_systemd_ks()
                     then
                         printf "${SUCCESS}kube-scheduler --kubeconfig is correct\n${NC}"
                     else
-                        printf "${FAILED}Exiting...Found mismtach in the kube-scheduler --kubeconfig. More details: https://github.com/mmumshad/kubernetes-the-hard-way/blob/master/docs/08-bootstrapping-kubernetes-controllers.md#configure-the-kubernetes-scheduler\n${NC}"
+                        printf "${FAILED}Exiting...Found [8] mismtach in the kube-scheduler --kubeconfig. More details: https://github.com/mmumshad/kubernetes-the-hard-way/blob/master/docs/08-bootstrapping-kubernetes-controllers.md#configure-the-kubernetes-scheduler\n${NC}"
                         exit 1
                 fi
             else
@@ -539,12 +543,6 @@ case $value in
     ;;
 
   5)
-    if ! [ "${HOST}" = "worker-2" ]
-    then
-        printf "${FAILED}Must run on worker-2${NC}\n"
-        exit 1
-    fi
-
     CERT_LOCATION=/var/lib/kubernetes/pki
     check_cert_only "ca" $SUBJ_CA $CERT_ISSUER
     check_cert_and_key "kube-proxy" $SUBJ_KP $CERT_ISSUER

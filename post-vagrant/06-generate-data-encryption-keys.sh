@@ -1,4 +1,9 @@
-ENCRYPTION_KEY=$(head -c 32 /dev/urandom | base64)
+cat >> ~/.bash_profile <<EOF
+export ENCRYPTION_KEY=\$(head -c 32 /dev/urandom | base64)
+EOF
+
+source .bash_profile
+export
 
 ## Create the encryption-config.yaml encryption config file
 cat > encryption-config.yaml <<EOF
@@ -15,6 +20,11 @@ resources:
       - identity: {}
 EOF
 
+## Backup encryption-config.yaml
+mkdir -p ~/backup/encryptionconfigs
+
+cp ~/encryption-config.yaml ~/backup/encryptionconfigs/
+
 ## Copy the encryption-config.yaml encryption config file to each controller instance
 {
   for instance in master-1 master-2; do
@@ -29,4 +39,3 @@ EOF
     ssh ${instance} sudo mv encryption-config.yaml /var/lib/kubernetes/
   done
 }
-

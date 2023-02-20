@@ -1,5 +1,3 @@
-LOADBALANCER=$(dig +short loadbalancer)
-
 ## Generate a kubeconfig file for the kube-proxy service
 {
   kubectl config set-cluster kubernetes-the-hard-way \
@@ -83,15 +81,16 @@ LOADBALANCER=$(dig +short loadbalancer)
 }
 
 ## Copy the appropriate kube-proxy kubeconfig files to each worker instance
-{
-  for instance in worker-1 worker-2; do
-    scp kube-proxy.kubeconfig ${instance}:~/
-  done
-}
+for instance in worker-1 worker-2 worker-3 worker-4 worker-5 worker-6; do
+  scp kube-proxy.kubeconfig ${instance}:~/
+done
 
 ## Copy the appropriate admin.kubeconfig, kube-controller-manager and kube-scheduler kubeconfig files to each controller instance
-{
-  for instance in master-1 master-2; do
-    scp admin.kubeconfig kube-controller-manager.kubeconfig kube-scheduler.kubeconfig ${instance}:~/
-  done
-}
+for instance in master-1 master-2; do
+  scp admin.kubeconfig kube-controller-manager.kubeconfig kube-scheduler.kubeconfig ${instance}:~/
+done
+
+## Backup Certs and Configs
+mkdir -p ~/backup/kubeconfigs
+
+cp ~/*.kubeconfig ~/backup/kubeconfigs/

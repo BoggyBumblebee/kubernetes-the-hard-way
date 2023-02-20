@@ -1,8 +1,16 @@
+cat >> ~/.bash_profile <<EOF
+export MASTER_1=\$(dig +short master-1)
+export MASTER_2=\$(dig +short master-2)
+export INTERNAL_IP=\$(ip addr show enp0s8 | grep "inet " | awk '{print \$2}' | cut -d / -f 1)
+export ETCD_NAME=\$(hostname -s)
+EOF
+
+source .bash_profile
+export
+
 ## Download the official etcd release binaries from the etcd GitHub project
-{
-  wget -q --show-progress --https-only --timestamping \
-    "https://github.com/coreos/etcd/releases/download/v3.5.3/etcd-v3.5.3-linux-amd64.tar.gz"
-}
+wget -q --show-progress --https-only --timestamping \
+  "https://github.com/coreos/etcd/releases/download/v3.5.3/etcd-v3.5.3-linux-amd64.tar.gz"
 
 ## Extract and install the etcd server and the etcdctl command line utility
 {
@@ -10,7 +18,7 @@
   sudo mv etcd-v3.5.3-linux-amd64/etcd* /usr/local/bin/
 }
 
-## Copy and secure certificates
+## Copy and secure certificates. Note that we place ca.crt in our main PKI directory and link it from etcd to not have multiple copies of the cert lying around
 {
   sudo mkdir -p /etc/etcd /var/lib/etcd /var/lib/kubernetes/pki
   sudo cp etcd-server.key etcd-server.crt /etc/etcd/
@@ -21,14 +29,6 @@
   sudo chmod 600 /var/lib/kubernetes/pki/*
   sudo ln -s /var/lib/kubernetes/pki/ca.crt /etc/etcd/ca.crt
 }
-
-## Retrieve the internal IP address of the master(etcd) nodes, and also that of master-1 and master-2 for the etcd cluster member list
-INTERNAL_IP=$(ip addr show enp0s8 | grep "inet " | awk '{print $2}' | cut -d / -f 1)
-MASTER_1=$(dig +short master-1)
-MASTER_2=$(dig +short master-2)
-
-## Each etcd member must have a unique name within an etcd cluster. Set the etcd name to match the hostname of the current compute instance
-ETCD_NAME=$(hostname -s)
 
 ## Create the etcd.service systemd unit file
 cat <<EOF | sudo tee /etc/systemd/system/etcd.service
@@ -69,7 +69,7 @@ EOF
   sudo systemctl start etcd
 }
 
-## List the etcd cluster members
+## List the etcd cluster members
 sudo ETCDCTL_API=3 etcdctl member list \
   --endpoints=https://127.0.0.1:2379 \
   --cacert=/etc/etcd/ca.crt \

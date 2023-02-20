@@ -1,3 +1,15 @@
+cat >> ~/.bash_profile <<EOF
+export MASTER_1=\$(dig +short master-1)
+export MASTER_2=\$(dig +short master-2)
+export INTERNAL_IP=\$(ip addr show enp0s8 | grep "inet " | awk '{print \$2}' | cut -d / -f 1)
+export LOADBALANCER=\$(dig +short loadbalancer)
+export POD_CIDR=10.244.0.0/16
+export SERVICE_CIDR=10.96.0.0/16
+EOF
+
+source .bash_profile
+export
+
 ## Download the official Kubernetes release binaries
 wget -q --show-progress --https-only --timestamping \
   "https://storage.googleapis.com/kubernetes-release/release/v1.24.3/bin/linux/amd64/kube-apiserver" \
@@ -24,15 +36,6 @@ wget -q --show-progress --https-only --timestamping \
   sudo chown root:root /var/lib/kubernetes/pki/*
   sudo chmod 600 /var/lib/kubernetes/pki/*
 }
-
-INTERNAL_IP=$(ip addr show enp0s8 | grep "inet " | awk '{print $2}' | cut -d / -f 1)
-LOADBALANCER=$(dig +short loadbalancer)
-
-MASTER_1=$(dig +short master-1)
-MASTER_2=$(dig +short master-2)
-
-POD_CIDR=10.244.0.0/16
-SERVICE_CIDR=10.96.0.0/16
 
 ## Create the kube-apiserver.service systemd unit file
 cat <<EOF | sudo tee /etc/systemd/system/kube-apiserver.service
@@ -139,3 +142,50 @@ EOF
 
 ## Secure kubeconfigs
 sudo chmod 600 /var/lib/kubernetes/*.kubeconfig
+
+###############################################
+
+## Start the Controller Services
+{
+  sudo systemctl daemon-reload
+  sudo systemctl enable kube-apiserver kube-controller-manager kube-scheduler
+  sudo systemctl start kube-apiserver kube-controller-manager kube-scheduler
+}
+
+## Verification - Allow up to 10 seconds for the Kubernetes API Server to fully initialize
+kubectl get componentstatuses --kubeconfig admin.kubeconfig
+
+###############################################
+
+cat >> ~/.bash_profile <<EOF
+export MASTER_1=\$(dig +short master-1)
+export MASTER_2=\$(dig +short master-2)
+export LOADBALANCER=\$(dig +short loadbalancer)
+EOF
+
+source .bash_profile
+export
+
+## Install haproxy
+sudo apt-get update && sudo apt-get install -y haproxy
+
+## Create HAProxy configuration to listen on API server port on this host and distribute requests evently to the two master nodes
+cat <<EOF | sudo tee /etc/haproxy/haproxy.cfg
+frontend kubernetes
+    bind ${LOADBALANCER}:6443
+    option tcplog
+    mode tcp
+    default_backend kubernetes-master-nodes
+
+backend kubernetes-master-nodes
+    mode tcp
+    balance roundrobin
+    option tcp-check
+    server master-1 ${MASTER_1}:6443 check fall 3 rise 2
+    server master-2 ${MASTER_2}:6443 check fall 3 rise 2
+EOF
+
+sudo systemctl restart haproxy
+
+## Verification - Make a HTTP request for the Kubernetes version info
+curl  https://${LOADBALANCER}:6443/version -k

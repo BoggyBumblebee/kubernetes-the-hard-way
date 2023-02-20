@@ -1,0 +1,8 @@
+cat >> ~/.ssh/authorized_keys <<EOF
+ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCdeiX4Ql5dwr+2VY0c/m+w72v2DIydjeJBhGriOsf6wJa1CETu69QCeUgA7cNId6dv4Q/x0e1LjPqJNhrQzCgVm7hivaSHy4eEB2DOkPKYDvBf+RGy5oMG7DhyK8VH2RXIJgaP7fl3Inb1ZZTuWtUcZ3ijmcPxFHoL9ymoZwP3hdEQh2QWg4oDsWsySEvUXlxKC5KDiTW06nT2tq5uEiK0KwcyESIQ4pO0xYn/lpmAOASvBK9DvTxdMJVI8u2iEXV1badJNPfGbuGJYASLj+AncCIAAMaPCABB16caR8QkZddJ8RK2iRUbvEHDYXCa9X2WJZfes+j5zU61B266r6E8YtrjndOYRT9WXjBfYXGVJVMuoy7wqR4HJv7Xfx0B8mVggnD5XqmgTHq6aurzcmeJn2iFuevjg7xW9w7XWLG+dZf5WYrxzq1Hin9VRgG3G5YgbccCBFfwi9fawwlZqHBZ5b/9BRnDsium9W9RCbm7afcM8qDlOjt7z32/9/9J9xs= vagrant@master-1
+EOF
+
+wget https://storage.googleapis.com/kubernetes-release/release/v1.24.3/bin/linux/amd64/kubectl
+chmod +x kubectl
+sudo mv kubectl /usr/local/bin/
+kubectl version -o yaml

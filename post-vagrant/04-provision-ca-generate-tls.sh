@@ -1,16 +1,15 @@
-MASTER_1=$(dig +short master-1)
-MASTER_2=$(dig +short master-2)
-LOADBALANCER=$(dig +short loadbalancer)
+cat > ~/.bash_profile <<EOF
+export MASTER_1=\$(dig +short master-1)
+export MASTER_2=\$(dig +short master-2)
+export LOADBALANCER=\$(dig +short loadbalancer)
+export SERVICE_CIDR=10.96.0.0/24
+export API_SERVICE=\$(echo \$SERVICE_CIDR | awk 'BEGIN {FS="."} ; { printf("%s.%s.%s.1", \$1, \$2, \$3) }')
+EOF
 
-SERVICE_CIDR=10.96.0.0/24
-API_SERVICE=$(echo $SERVICE_CIDR | awk 'BEGIN {FS="."} ; { printf("%s.%s.%s.1", $1, $2, $3) }')
+source .bash_profile
+export
 
-echo $MASTER_1
-echo $MASTER_2
-echo $LOADBALANCER
-echo $SERVICE_CIDR
-echo $API_SERVICE
-
+## Create a CA certificate, then generate a Certificate Signing Request and use it to create a private key
 {
   # Create private key for CA
   openssl genrsa -out ca.key 2048
@@ -25,6 +24,7 @@ echo $API_SERVICE
   openssl x509 -req -in ca.csr -signkey ca.key -CAcreateserial  -out ca.crt -days 1000
 }
 
+## Generate the admin client certificate and private key
 {
   # Generate private key for admin user
   openssl genrsa -out admin.key 2048
@@ -36,6 +36,7 @@ echo $API_SERVICE
   openssl x509 -req -in admin.csr -CA ca.crt -CAkey ca.key -CAcreateserial  -out admin.crt -days 1000
 }
 
+## Generate the kube-controller-manager client certificate and private key
 {
   openssl genrsa -out kube-controller-manager.key 2048
 
@@ -46,6 +47,7 @@ echo $API_SERVICE
     -CA ca.crt -CAkey ca.key -CAcreateserial -out kube-controller-manager.crt -days 1000
 }
 
+## Generate the kube-proxy client certificate and private key
 {
   openssl genrsa -out kube-proxy.key 2048
 
@@ -56,6 +58,7 @@ echo $API_SERVICE
     -CA ca.crt -CAkey ca.key -CAcreateserial  -out kube-proxy.crt -days 1000
 }
 
+## Generate the kube-scheduler client certificate and private key
 {
   openssl genrsa -out kube-scheduler.key 2048
 
@@ -65,6 +68,7 @@ echo $API_SERVICE
   openssl x509 -req -in kube-scheduler.csr -CA ca.crt -CAkey ca.key -CAcreateserial  -out kube-scheduler.crt -days 1000
 }
 
+## The openssl command cannot take alternate names as command line parameter. So we must create a conf file for it
 cat > openssl.cnf <<EOF
 [req]
 req_extensions = v3_req
@@ -88,6 +92,7 @@ IP.4 = ${LOADBALANCER}
 IP.5 = 127.0.0.1
 EOF
 
+## Generate certs for kube-apiserver
 {
   openssl genrsa -out kube-apiserver.key 2048
 
@@ -98,6 +103,7 @@ EOF
   -CA ca.crt -CAkey ca.key -CAcreateserial  -out kube-apiserver.crt -extensions v3_req -extfile openssl.cnf -days 1000
 }
 
+## This certificate is for the api server to authenticate with the kubelets when it requests information from them
 cat > openssl-kubelet.cnf <<EOF
 [req]
 req_extensions = v3_req
@@ -109,6 +115,7 @@ keyUsage = critical, nonRepudiation, digitalSignature, keyEncipherment
 extendedKeyUsage = clientAuth
 EOF
 
+## Generate certs for kubelet authentication
 {
   openssl genrsa -out apiserver-kubelet-client.key 2048
 
@@ -119,6 +126,7 @@ EOF
   -CA ca.crt -CAkey ca.key -CAcreateserial  -out apiserver-kubelet-client.crt -extensions v3_req -extfile openssl-kubelet.cnf -days 1000
 }
 
+## The openssl command cannot take alternate names as command line parameter. So we must create a conf file for i
 cat > openssl-etcd.cnf <<EOF
 [req]
 req_extensions = v3_req
@@ -134,6 +142,7 @@ IP.2 = ${MASTER_2}
 IP.3 = 127.0.0.1
 EOF
 
+## Generates certs for ETCD
 {
   openssl genrsa -out etcd-server.key 2048
 
@@ -144,6 +153,7 @@ EOF
     -CA ca.crt -CAkey ca.key -CAcreateserial  -out etcd-server.crt -extensions v3_req -extfile openssl-etcd.cnf -days 1000
 }
 
+## Generate the service-account certificate and private key
 {
   openssl genrsa -out service-account.key 2048
 
@@ -153,3 +163,27 @@ EOF
   openssl x509 -req -in service-account.csr \
     -CA ca.crt -CAkey ca.key -CAcreateserial  -out service-account.crt -days 1000
 }
+
+## Copy the appropriate certificates and private keys to each instance
+{
+for instance in master-1 master-2; do
+  scp ca.crt ca.key kube-apiserver.key kube-apiserver.crt \
+    apiserver-kubelet-client.crt apiserver-kubelet-client.key \
+    service-account.key service-account.crt \
+    etcd-server.key etcd-server.crt \
+    kube-controller-manager.key kube-controller-manager.crt \
+    kube-scheduler.key kube-scheduler.crt \
+    ${instance}:~/
+done
+
+for instance in worker-1 worker-2 worker-3 worker-4 worker-5 worker-6; do
+  scp ca.crt kube-proxy.crt kube-proxy.key ${instance}:~/
+done
+}
+
+## Backup Certs and Configs
+mkdir -p ~/backup/certs
+mkdir -p ~/backup/configs
+
+cp ~/*.csr ~/*.crt ~/*.key ~/backup/certs/
+cp ~/*.cnf ~/backup/configs/

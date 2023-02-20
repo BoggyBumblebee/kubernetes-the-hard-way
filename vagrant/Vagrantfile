@@ -75,8 +75,8 @@ Vagrant.configure("2") do |config|
       provision_kubernetes_node node
       if i == 1
         # Install (opinionated) configs for vim and tmux on master-1. These used by the author for CKA exam.
-        node.vm.provision "file", source: "./ubuntu/tmux.conf", destination: "$HOME/.tmux.conf"
-        node.vm.provision "file", source: "./ubuntu/vimrc", destination: "$HOME/.vimrc"
+        # node.vm.provision "file", source: "./ubuntu/tmux.conf", destination: "$HOME/.tmux.conf"
+        # node.vm.provision "file", source: "./ubuntu/vimrc", destination: "$HOME/.vimrc"
       end
     end
   end
